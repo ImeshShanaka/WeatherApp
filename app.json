@@ -3,27 +3,17 @@
     "name": "WeatherApp",
     "slug": "WeatherApp",
     "version": "1.0.0",
-    "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "icon": "./assets/images/logo.png",
     "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true
+      "image": "./assets/images/dark_mode.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#000000"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
+        "foregroundImage": "./assets/images/dark_mode.png",
+        "backgroundColor": "#000000"
+      }
     }
   }
 }

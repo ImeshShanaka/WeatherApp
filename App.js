@@ -1,26 +1,20 @@
 import React from 'react';
-import HomeScreen from './screen/HomeScreen';
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import HomeScreen from './screens/HomeScreen';
+import ForecastScreen from './screens/ForecastScreen';
+import Settings from './screens/settings';
+
+const Stack = createNativeStackNavigator();
 
 export default function App() {
-  return <HomeScreen />;
-}
-
-/*export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Hello Imesh</Text>
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="HomeScreen" component={HomeScreen} />
+        <Stack.Screen name="ForecastScreen" component={ForecastScreen} />
+        <Stack.Screen name="settings" component={Settings} />
+      </Stack.Navigator>
+    </NavigationContainer>
   );
-}*/
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
+}
