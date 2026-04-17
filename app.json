@@ -14,6 +14,16 @@
         "foregroundImage": "./assets/images/dark_mode.png",
         "backgroundColor": "#000000"
       }
-    }
+    },
+    "androidNavigationBar": {
+      "visible": "immersive"
+    },
+    "androidStatusBar": {
+      "translucent": true,
+      "backgroundColor": "transparent"
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

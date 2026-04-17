@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { StatusBar } from 'expo-status-bar';
 import HomeScreen from './screens/HomeScreen';
 import ForecastScreen from './screens/ForecastScreen';
 import Settings from './screens/settings';
@@ -10,7 +11,11 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <StatusBar style="light" translucent backgroundColor="transparent" />
+      <Stack.Navigator screenOptions={{ 
+        headerShown: false,
+        contentStyle: { backgroundColor: 'transparent' }
+      }}>
         <Stack.Screen name="HomeScreen" component={HomeScreen} />
         <Stack.Screen name="ForecastScreen" component={ForecastScreen} />
         <Stack.Screen name="settings" component={Settings} />
