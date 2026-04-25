@@ -66,18 +66,18 @@ function getWeatherEmoji(id, iconCode = '') {
   
   //Weather situations
   if (id > 800) {
-    return isNight ? require('../assets/weather/night_cloud.png') : require('../assets/weather/cloud.png');
+    return isNight ? require('../assets/weather/night_cloudd.png') : require('../assets/weather/cloudd.png');
   }
-  if (id >= 200 && id < 300) return isNight ? require('../assets/weather/night_thunderstrom.png') : require('../assets/weather/thunderstorm.png');
-  if (id >= 300 && id < 400) return require('../assets/weather/drizzle.png');
+  if (id >= 200 && id < 300) return isNight ? require('../assets/weather/night_thunderstromd.png') : require('../assets/weather/thunderstormd.png');
+  if (id >= 300 && id < 400) return require('../assets/weather/drizzled.png');
   if (id >= 500 && id < 600) {
-    if (id === 500 || id === 501) return isNight ? require('../assets/weather/night_rain.png') : require('../assets/weather/rain.png');
-    return isNight ? require('../assets/weather/night_heavy.png') : require('../assets/weather/heavy_rain.png');
+    if (id === 500 || id === 501) return isNight ? require('../assets/weather/night_raind.png') : require('../assets/weather/raind.png');
+    return isNight ? require('../assets/weather/night_heavyd.png') : require('../assets/weather/heavy-raind.png');
   }
-  if (id >= 600 && id < 700) require('../assets/weather/snow.png');
-  if (id >= 700 && id < 800) return isNight ? require('../assets/weather/night_wind.png') : require('../assets/weather/wind.png');
-  if (id === 800) return isNight ? require('../assets/weather/moon.png') : require('../assets/weather/sun.png');
-  return require('../assets/weather/thermometer.png');
+  if (id >= 600 && id < 700) require('../assets/weather/snowd.png');
+  if (id >= 700 && id < 800) return isNight ? require('../assets/weather/night_windd.png') : require('../assets/weather/windd.png');
+  if (id === 800) return isNight ? require('../assets/weather/moond.png') : require('../assets/weather/sund.png');
+  return require('../assets/weather/thermometerd.png');
 }
 
 function formatTime(unixTs, timezoneOffset) {
@@ -282,7 +282,6 @@ function ForecastCard({ item, unit, displayTempRound }) {
       <View style={styles.glassCardShimmer} />
       <Text style={styles.forecastDay}>{item.day}</Text>
       
-      {/* Hybrid Render: Icon if Clouds, Emoji otherwise */}
       {typeof visual === 'string' ? (
         <Text style={styles.forecastEmoji}>{visual}</Text>
       ) : (
@@ -334,10 +333,11 @@ export default function ForecastScreen({ navigation }) {
     loadWeather(city);
   };
 
+  //navigation settings
   const handleTabPress = (key) => {
     setActiveTab(key);
     if (key === 'settings' && navigation) {
-      navigation.navigate('settings'); 
+      navigation.navigate('settings');
     }
   };
 
@@ -347,7 +347,7 @@ export default function ForecastScreen({ navigation }) {
 
   return (
     <ImageBackground
-      source={require('../assets/images/dark_mode.png')}
+      source={require('../assets/images/light_mode.png')}
       style={[styles.bg, { width, height }]}
       resizeMode="cover"
     >
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
   },
   topRow: {
     paddingHorizontal: 18,
-    paddingTop: 0,
+    paddingTop: 0, 
     paddingBottom: 4,
     zIndex: 10,
   },
@@ -595,7 +595,7 @@ const styles = StyleSheet.create({
   },
   iconWrapper: { alignItems: 'center', marginVertical: 10 },
   bigIcon: { fontSize: 120, lineHeight: 130 },
-  cloudIconBig: { width: 160, height: 140, marginTop: 7 }, // New style for Clouds
+  cloudIconBig: { width: 160, height: 140, marginTop: 7 }, 
   tempText: {
     color: '#fff',
     fontSize: 72,
@@ -695,7 +695,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   forecastEmoji: { fontSize: 30 },
-  cloudIconSmall: { width: 35, height: 35, marginVertical: 2 }, // New style for Clouds
+  cloudIconSmall: { width: 35, height: 35, marginVertical: 2 }, 
   tempHigh: {
     color: '#fff',
     fontSize: 16,

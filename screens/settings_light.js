@@ -45,7 +45,7 @@ function BottomNavBar({ activeTab, onTabPress, darkMode }) {
           >
             <tab.Icon 
               size={26} 
-              color={isActive ? '#7C5CBF' : '#aaa'} 
+              color={isActive ? '#000' : '#000'} // Updated to black
               strokeWidth={isActive ? 2.5 : 2} 
             />
             <Text style={[styles.navLabel, isActive && styles.navLabelActive, { marginTop: 4 }]}>
@@ -92,7 +92,7 @@ function TempToggle({ unit, onChange }) {
         value={unit === 'F'}
         onValueChange={(val) => onChange(val ? 'F' : 'C')}
         trackColor={{ false: 'rgba(255,255,255,0.3)', true: 'rgba(255,255,255,0.3)' }}
-        thumbColor="#fff"
+        thumbColor="#000"
         ios_backgroundColor="rgba(255,255,255,0.3)"
         style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
       />
@@ -102,7 +102,7 @@ function TempToggle({ unit, onChange }) {
 }
 
 //main
-export default function SettingsDark({ navigation }) {
+export default function SettingsLight({ navigation }) {
   const {
     unit, updateUnit,
     darkMode, updateDarkMode,
@@ -148,11 +148,11 @@ export default function SettingsDark({ navigation }) {
 
   return (
     <ImageBackground
-      source={require('../assets/images/dark_mode.png')}
+      source={require('../assets/images/light_mode.png')}
       style={styles.bg}
       resizeMode="cover"
     >
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
@@ -170,7 +170,7 @@ export default function SettingsDark({ navigation }) {
               icon={
                 <Image 
                   source={require('../assets/icons/temprature.png')} 
-                  style={{ width: 22, height: 22, tintColor: '#fff' }} 
+                  style={{ width: 22, height: 22, tintColor: '#000' }} 
                   resizeMode="contain" 
                 />
               }
@@ -184,14 +184,14 @@ export default function SettingsDark({ navigation }) {
           <View style={styles.glassCard}>
             <View style={styles.glassCardShimmer} />
             <SettingsRow
-              icon={darkMode ? <MoonIcon size={22} color="#fff" /> : <SunIcon size={22} color="#fff" />}
+              icon={darkMode ? <MoonIcon size={22} color="#000" /> : <SunIcon size={22} color="#000" />}
               label="Dark Mode"
               right={
                 <Switch
                   value={darkMode}
                   onValueChange={updateDarkMode}
                   trackColor={{ false: 'rgba(255,255,255,0.25)', true: 'rgba(255,255,255,0.45)' }}
-                  thumbColor="#fff"
+                  thumbColor="#000"
                   ios_backgroundColor="rgba(255,255,255,0.25)"
                   style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
                 />
@@ -204,7 +204,7 @@ export default function SettingsDark({ navigation }) {
           <View style={styles.glassCard}>
             <View style={styles.glassCardShimmer} />
             <SettingsRow
-              icon={<MapPinIcon size={22} color="#fff" />}
+              icon={<MapPinIcon size={22} color="#000" />}
               label={
                 savedCity
                   ? `${savedCity} (current default)`
@@ -214,7 +214,7 @@ export default function SettingsDark({ navigation }) {
               showArrow={!locationLoading}
               right={
                 locationLoading
-                  ? <ActivityIndicator size="small" color="#fff" />
+                  ? <ActivityIndicator size="small" color="#000" />
                   : null
               }
             />
@@ -225,13 +225,13 @@ export default function SettingsDark({ navigation }) {
           <View style={styles.glassCard}>
             <View style={styles.glassCardShimmer} />
             <SettingsRow
-              icon={<InformationCircleIcon size={22} color="#fff" />}
+              icon={<InformationCircleIcon size={22} color="#000" />}
               label="Weather App"
               right={<Text style={styles.aboutValue}>v1.0.0</Text>}
             />
             <View style={styles.rowDivider} />
             <SettingsRow
-              icon={<CircleStackIcon size={22} color="#fff" />}
+              icon={<CircleStackIcon size={22} color="#000" />}
               label="Data Source"
               right={<Text style={styles.aboutValue}>OpenWeatherMap</Text>}
             />
@@ -240,7 +240,7 @@ export default function SettingsDark({ navigation }) {
               <Text style={styles.footerText}>
                 Made with ❤️ by <Text style={styles.footerName}>Imesh Shanaka</Text>
               </Text>
-            </View>
+            </View>           
         </ScrollView>
 
         <BottomNavBar activeTab={activeTab} onTabPress={handleTabPress} darkMode={darkMode} />
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   },
 
   pageTitle: {
-    color: '#fff',
+    color: '#000',
     fontSize: 32,
     fontWeight: '800',
     marginBottom: 28,
@@ -278,7 +278,7 @@ const styles = StyleSheet.create({
   },
 
   sectionHeader: {
-    color: 'rgba(255,255,255,0.55)',
+    color: '#000',
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1.4,
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   rowLabel: {
-    color: '#fff',
+    color: '#000',
     fontSize: 15,
     fontWeight: '500',
     flex: 1,
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   arrow: {
-    color: 'rgba(255,255,255,0.5)',
+    color: '#000',
     fontSize: 20,
     fontWeight: '300',
     marginLeft: 4,
@@ -356,16 +356,17 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   tempLabel: {
-    color: 'rgba(255,255,255,0.4)',
+    color: '#000',
     fontSize: 14,
     fontWeight: '600',
   },
   tempLabelActive: {
-    color: '#fff',
+    color: '#000',
+    fontWeight: '800',
   },
 
   aboutValue: {
-    color: 'rgba(255,255,255,0.5)',
+    color: '#000',
     fontSize: 13,
     fontWeight: '500',
   },
@@ -397,11 +398,11 @@ const styles = StyleSheet.create({
   navLabel: { 
     fontSize: 12, 
     fontWeight: '500', 
-    color: '#aaa' 
+    color: '#000'
   },
   navLabelActive: { 
-    color: '#7C5CBF', 
-    fontWeight: '700' 
+    color: '#000',
+    fontWeight: '800'
   },
   footerContainer: {
     marginTop: 32,
@@ -409,13 +410,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    color: 'rgba(255, 255, 255, 0.4)',
+    color: 'rgba(13, 1, 1, 0.76)',
     fontSize: 12,
     fontWeight: '400',
     letterSpacing: 0.3,
   },
   footerName: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgb(0, 0, 0)',
     fontWeight: '600',
   },
 });
