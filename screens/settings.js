@@ -20,20 +20,32 @@ import {
   CloudIcon, 
   CogIcon,
   MapPinIcon,
+  ClockIcon,
   SunIcon,
-  MoonIcon,
   InformationCircleIcon,
   CircleStackIcon
 } from 'react-native-heroicons/outline';
 
+function CustomWindIcon({ size, color }) {
+  return (
+    <Image 
+      source={require('../assets/icons/wind.png')} 
+      style={{ width: size, height: size, tintColor: color }} 
+      resizeMode="contain" 
+    />
+  );
+}
+
 //Bottom navigation bar
-function BottomNavBar({ activeTab, onTabPress, darkMode }) {
+function BottomNavBar({ activeTab, onTabPress }) {
   const tabs = [
     { key: 'weather', label: 'Weather', Icon: CloudIcon },
+    { key: 'hourly', label: 'Hourly', Icon: ClockIcon },
+    { key: 'air', label: 'Air', Icon: CustomWindIcon },
     { key: 'settings', label: 'Settings', Icon: CogIcon },
   ];
   return (
-    <View style={[styles.navBar, !darkMode && styles.navBarLight]}>
+    <View style={styles.navBar}>
       {tabs.map((tab) => {
         const isActive = activeTab === tab.key;
         return (
@@ -43,10 +55,10 @@ function BottomNavBar({ activeTab, onTabPress, darkMode }) {
             onPress={() => onTabPress(tab.key)}
             activeOpacity={0.7}
           >
-            <tab.Icon 
-              size={26} 
-              color={isActive ? '#7C5CBF' : '#aaa'} 
-              strokeWidth={isActive ? 2.5 : 2} 
+            <tab.Icon
+              size={22}
+              color={isActive ? '#A78BFA' : 'rgba(255,255,255,0.58)'}
+              strokeWidth={isActive ? 2.5 : 2}
             />
             <Text style={[styles.navLabel, isActive && styles.navLabelActive, { marginTop: 4 }]}>
               {tab.label}
@@ -105,7 +117,7 @@ function TempToggle({ unit, onChange }) {
 export default function SettingsDark({ navigation }) {
   const {
     unit, updateUnit,
-    darkMode, updateDarkMode,
+    darkMode,
     savedCity, updateSavedCity,
   } = useAppContext();
 
@@ -120,16 +132,29 @@ export default function SettingsDark({ navigation }) {
         Alert.alert('Permission Denied', 'Location access is required to refresh your location.');
         return;
       }
-      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const [place] = await Location.reverseGeocodeAsync({
-        latitude: loc.coords.latitude,
-        longitude: loc.coords.longitude,
-      });
-      if (place?.city) {
-        await updateSavedCity(place.city);
-        Alert.alert('Location Updated', `Default city set to ${place.city}.`);
-      } else {
-        Alert.alert('Error', 'Could not determine city from your location.');
+      
+      // Use High accuracy to get exact GPS coordinates
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+      const { latitude, longitude } = loc.coords;
+      
+      // Bypass expo-location and use BigDataCloud's free reverse geocoder (no API key needed)
+      // This is much better at finding exact local towns instead of broad districts
+      const response = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+      );
+      const place = await response.json();
+      
+      if (place) {
+        let cityName = place.locality || place.city || place.principalSubdivision;
+        
+        if (cityName) {
+          cityName = cityName.replace(' District', '');
+          
+          await updateSavedCity(cityName);
+          Alert.alert('Location Updated', `Default city set to ${cityName}.`);
+        } else {
+          Alert.alert('Error', 'Could not determine city from your location.');
+        }
       }
     } catch (e) {
       Alert.alert('Error', 'Failed to get location. Please try again.');
@@ -143,6 +168,12 @@ export default function SettingsDark({ navigation }) {
     setActiveTab(key);
     if (key === 'weather' && navigation) {
       navigation.navigate('ForecastScreen'); 
+    }
+    if (key === 'hourly' && navigation) {
+      navigation.navigate('HourlyScreen');
+    }
+    if (key === 'air' && navigation) {
+      navigation.navigate('AirQualityScreen');
     }
   };
 
@@ -179,26 +210,6 @@ export default function SettingsDark({ navigation }) {
             />
           </View>
 
-          {/*dark or light*/}
-          <SectionHeader title="APPEARANCE" />
-          <View style={styles.glassCard}>
-            <View style={styles.glassCardShimmer} />
-            <SettingsRow
-              icon={darkMode ? <MoonIcon size={22} color="#fff" /> : <SunIcon size={22} color="#fff" />}
-              label="Dark Mode"
-              right={
-                <Switch
-                  value={darkMode}
-                  onValueChange={updateDarkMode}
-                  trackColor={{ false: 'rgba(255,255,255,0.25)', true: 'rgba(255,255,255,0.45)' }}
-                  thumbColor="#fff"
-                  ios_backgroundColor="rgba(255,255,255,0.25)"
-                  style={{ transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }] }}
-                />
-              }
-            />
-          </View>
-
           {/*location*/}
           <SectionHeader title="LOCATION" />
           <View style={styles.glassCard}>
@@ -227,13 +238,13 @@ export default function SettingsDark({ navigation }) {
             <SettingsRow
               icon={<InformationCircleIcon size={22} color="#fff" />}
               label="Weather App"
-              right={<Text style={styles.aboutValue}>v1.0.0</Text>}
+              right={<Text style={styles.aboutValue}>v1.0.2</Text>}
             />
             <View style={styles.rowDivider} />
             <SettingsRow
               icon={<CircleStackIcon size={22} color="#fff" />}
               label="Data Source"
-              right={<Text style={styles.aboutValue}>OpenWeatherMap</Text>}
+              right={<Text style={styles.aboutValue}>OpenWeatherMap / Open-Meteo</Text>}
             />
           </View>
             <View style={styles.footerContainer}>
@@ -243,7 +254,7 @@ export default function SettingsDark({ navigation }) {
             </View>
         </ScrollView>
 
-        <BottomNavBar activeTab={activeTab} onTabPress={handleTabPress} darkMode={darkMode} />
+        <BottomNavBar activeTab={activeTab} onTabPress={handleTabPress} />
       </SafeAreaView>
     </ImageBackground>
   );
@@ -372,21 +383,20 @@ const styles = StyleSheet.create({
 
   navBar: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    height: 72,
+    backgroundColor: '#262A33',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: 78,
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 24,
+    paddingHorizontal: 18,
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 16,
-  },
-  navBarLight: { 
-    backgroundColor: 'rgba(255,255,255,0.92)' 
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 20,
   },
   navItem: {
     flex: 1,
@@ -394,13 +404,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 8,
   },
-  navLabel: { 
-    fontSize: 12, 
-    fontWeight: '500', 
-    color: '#aaa' 
+  navLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: 'rgba(255,255,255,0.58)',
   },
   navLabelActive: { 
-    color: '#7C5CBF', 
+    color: '#A78BFA', 
     fontWeight: '700' 
   },
   footerContainer: {

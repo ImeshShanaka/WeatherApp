@@ -15,18 +15,18 @@ export function AppProvider({ children }) {
   const [savedCity, setSavedCity] = useState(null);
   const [loaded, setLoaded] = useState(false);
 
-  // ── Load saved data ───────────────────────────────
+  //Loading saved data
   useEffect(() => {
     (async () => {
       try {
-        const [storedUnit, storedDark, storedCity] = await Promise.all([
+        const [storedUnit, , storedCity] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.UNIT),
           AsyncStorage.getItem(STORAGE_KEYS.DARK_MODE),
           AsyncStorage.getItem(STORAGE_KEYS.SAVED_CITY),
         ]);
 
         if (storedUnit) setUnit(storedUnit);
-        if (storedDark !== null) setDarkMode(storedDark === 'true');
+        setDarkMode(true);
         if (storedCity) setSavedCity(storedCity);
       } catch (e) {
         console.warn('Failed to load settings:', e);
@@ -36,15 +36,15 @@ export function AppProvider({ children }) {
     })();
   }, []);
 
-  // ── Update functions ──────────────────────────────
+  //Update function
   const updateUnit = async (value) => {
     setUnit(value);
     await AsyncStorage.setItem(STORAGE_KEYS.UNIT, value);
   };
 
   const updateDarkMode = async (value) => {
-    setDarkMode(value);
-    await AsyncStorage.setItem(STORAGE_KEYS.DARK_MODE, String(value));
+    setDarkMode(true);
+    await AsyncStorage.setItem(STORAGE_KEYS.DARK_MODE, 'true');
   };
 
   const updateSavedCity = async (city) => {
@@ -52,7 +52,6 @@ export function AppProvider({ children }) {
     await AsyncStorage.setItem(STORAGE_KEYS.SAVED_CITY, city);
   };
 
-  // ── 🔥 FIX: Safe + consistent conversions ─────────
   const displayTemp = (tempC) => {
     if (tempC === undefined || tempC === null) return '--';
 
@@ -77,7 +76,6 @@ export function AppProvider({ children }) {
     return Math.round(c);
   };
 
-  // ── 🔥 IMPORTANT: Memoized context (forces re-render) ──
   const value = useMemo(() => ({
     unit,
     updateUnit,

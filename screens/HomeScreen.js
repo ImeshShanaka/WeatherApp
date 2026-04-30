@@ -1,7 +1,8 @@
 import React from 'react';
-import { ImageBackground, StyleSheet, View, Text, TouchableOpacity, Image } from 'react-native';
+import { ImageBackground, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useFonts, Poppins_400Regular, Poppins_700Bold, Poppins_300Light_Italic } from '@expo-google-fonts/poppins';
+import LottieView from 'lottie-react-native'; 
 
 export default function HomeScreen({ navigation }) {
   const [fontsLoaded] = useFonts({
@@ -14,8 +15,6 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={styles.root}>
-
-      {/* Status bar change to light and transparent */}
       <StatusBar style="light" translucent={true} backgroundColor="transparent" />
 
       <ImageBackground
@@ -26,11 +25,14 @@ export default function HomeScreen({ navigation }) {
         <View style={styles.overlay}>
 
           <View style={styles.topSection}>
-            <Image
-              source={require('../assets/images/logo.png')}
+            {/* Animate icon loading */}
+            <LottieView
+              source={require('../assets/animations/loading.json')}
+              autoPlay
+              loop
               style={styles.logo}
-              resizeMode="contain"
             />
+            
             <Text style={styles.line1}>Welcome to</Text>
             <Text style={styles.line2}>WeatherBuddy</Text>
             <Text style={styles.line3}>
@@ -54,6 +56,7 @@ export default function HomeScreen({ navigation }) {
   );
 }
 
+//Styling
 const styles = StyleSheet.create({
   root: {
     flex: 1,
@@ -69,17 +72,17 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.4)',
-    paddingTop: 60,
-    paddingBottom: 60,
+    paddingTop: 10,
+    paddingBottom: 80,
   },
   topSection: {
     alignItems: 'center',
-    marginTop: 40,
+    marginTop: 30,
   },
   logo: {
-    width: 180,
-    height: 180,
-    marginBottom: 20,
+    width: 380,
+    height: 380,
+    marginBottom: 1,
   },
   line1: {
     color: '#fff',
@@ -98,7 +101,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     fontWeight: '300',
     textAlign: 'center',
-    marginTop: 28,
+    marginTop: 18,
     paddingHorizontal: 40,
     lineHeight: 20,
   },
@@ -107,7 +110,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btn: {
-    backgroundColor: '#003580',
+    backgroundColor: '#26124A',
     paddingVertical: 14,
     paddingHorizontal: 60,
     borderRadius: 12,

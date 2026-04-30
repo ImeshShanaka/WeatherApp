@@ -23,99 +23,89 @@ import {
   CloudIcon, 
   CogIcon,
   SunIcon,
+  ClockIcon,
   CalendarDaysIcon
 } from 'react-native-heroicons/outline';
 import { useAppContext } from '../AppContext';
-import LottieView from 'lottie-react-native'; 
+import { BlurView } from 'expo-blur';
 
-
-//API configure
-const API_KEY = '7a023b13674a2843d2f77bbbf9c29895';
-
-async function fetchCurrentWeather(city) {
-  const res = await fetch(
-    `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`
-  );
-  if (!res.ok) throw new Error('City not found');
-  return res.json();
-}
-
-async function fetchForecast(city) {
-  const res = await fetch(
-    `https://api.openweathermap.org/data/2.5/forecast?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric`
-  );
-  if (!res.ok) throw new Error('Forecast not found');
-  return res.json();
-}
-
+//Fetch suggestions using Open-Meteo's Geocoding API
 async function fetchCitySuggestions(query) {
   if (!query) return [];
   try {
     const res = await fetch(
-      `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=3&appid=${API_KEY}`
+      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=3`
     );
     if (!res.ok) return [];
-    return res.json();
+    const data = await res.json();
+    return data.results || [];
   } catch (error) {
     return [];
   }
 }
 
-function getWeatherEmoji(id, iconCode = '') {
-  const isNight = iconCode.endsWith('n');
+//Current day weather details and 7 days
+async function fetchWeatherData(query) {
+  const geoRes = await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=1`
+  );
+  const geoData = await geoRes.json();
+  if (!geoData.results || geoData.results.length === 0) throw new Error('City not found');
   
-  //Weather situations
-  if (id > 800) {
-    return isNight ? require('../assets/weather/night_cloud.png') : require('../assets/weather/cloud.png');
-  }
-  if (id >= 200 && id < 300) return isNight ? require('../assets/weather/night_thunderstrom.png') : require('../assets/weather/thunderstorm.png');
-  if (id >= 300 && id < 400) return require('../assets/weather/drizzle.png');
-  if (id >= 500 && id < 600) {
-    if (id === 500 || id === 501) return isNight ? require('../assets/weather/night_rain.png') : require('../assets/weather/rain.png');
-    return isNight ? require('../assets/weather/night_heavy.png') : require('../assets/weather/heavy_rain.png');
-  }
-  if (id >= 600 && id < 700) require('../assets/weather/snow.png');
-  if (id >= 700 && id < 800) return isNight ? require('../assets/weather/night_wind.png') : require('../assets/weather/wind.png');
-  if (id === 800) return isNight ? require('../assets/weather/moon.png') : require('../assets/weather/sun.png');
+  const city = geoData.results[0];
+
+  //Fetch Weather (Current + Daily)
+  const weatherRes = await fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${city.latitude}&longitude=${city.longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,sunrise&timezone=auto`
+  );
+  
+  if (!weatherRes.ok) throw new Error('Weather data not found');
+  const data = await weatherRes.json();
+
+  return {
+    current: {
+      name: city.name,
+      country: city.country_code,
+      temp: data.current.temperature_2m,
+      humidity: data.current.relative_humidity_2m,
+      windSpeed: data.current.wind_speed_10m,
+      weatherCode: data.current.weather_code,
+      isDay: data.current.is_day,
+      sunrise: data.daily.sunrise[0],
+    },
+    daily: data.daily.time.map((_, index) => {
+      const targetDate = new Date();
+      targetDate.setDate(targetDate.getDate() + index);
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      
+      return {
+        day: index === 0 ? 'Today' : days[targetDate.getDay()],
+        tempMax: data.daily.temperature_2m_max[index],
+        weatherCode: data.daily.weather_code[index],
+      };
+    })
+  };
+}
+
+function getWeatherEmoji(wmoCode, isNight) {
+  if (wmoCode === 0) return isNight ? require('../assets/weather/moon.png') : require('../assets/weather/sun.png');
+  if (wmoCode >= 1 && wmoCode <= 3) return isNight ? require('../assets/weather/night_cloud.png') : require('../assets/weather/cloud.png');
+  if (wmoCode >= 45 && wmoCode <= 48) return require('../assets/weather/cloud.png');
+  if (wmoCode >= 51 && wmoCode <= 57) return require('../assets/weather/drizzle.png');
+  if (wmoCode >= 61 && wmoCode <= 67) return isNight ? require('../assets/weather/night_rain.png') : require('../assets/weather/rain.png');
+  if (wmoCode >= 71 && wmoCode <= 77) return require('../assets/weather/snow.png');
+  if (wmoCode >= 80 && wmoCode <= 82) return isNight ? require('../assets/weather/night_heavy.png') : require('../assets/weather/heavy_rain.png');
+  if (wmoCode >= 95 && wmoCode <= 99) return isNight ? require('../assets/weather/night_thunderstrom.png') : require('../assets/weather/thunderstorm.png');
   return require('../assets/weather/thermometer.png');
 }
 
-function formatTime(unixTs, timezoneOffset) {
-  const date = new Date((unixTs + timezoneOffset) * 1000);
-  let h = date.getUTCHours();
-  const m = date.getUTCMinutes().toString().padStart(2, '0');
+function formatSunrise(isoString) {
+  const date = new Date(isoString);
+  let h = date.getHours();
+  const m = date.getMinutes().toString().padStart(2, '0');
   const ampm = h >= 12 ? 'PM' : 'AM';
   h = h % 12 || 12;
-  return `${h.toString().padStart(2, '0')}:${m} ${ampm}`;
-}
-
-function getDayName(dtTxt) {
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  return days[new Date(dtTxt).getDay()];
-}
-
-function groupByDay(list) {
-  const map = {};
-  list.forEach((item) => {
-    const date = item.dt_txt.split(' ')[0];
-    if (!map[date]) map[date] = [];
-    map[date].push(item);
-  });
-  return Object.entries(map)
-    .slice(0, 7)
-    .map(([, items]) => {
-      const mid = items[Math.floor(items.length / 2)];
-      const date = items[0].dt_txt.split(' ')[0];
-      const temps = items.map((i) => i.main.temp);
-      return {
-        day: getDayName(date),
-        temp: mid.main.temp,
-        tempMin: Math.min(...temps),
-        tempMax: Math.max(...temps),
-        id: mid.weather[0].id,
-        icon: mid.weather[0].icon, 
-      };
-    });
+  return `${h}:${m} ${ampm}`;
 }
 
 //Search bar
@@ -172,8 +162,7 @@ function SearchBar({ onSearch, loading }) {
   };
 
   const handleSuggestionPress = (suggestion) => {
-    const cityName = `${suggestion.name}, ${suggestion.country}`;
-    onSearch(cityName); 
+    onSearch(suggestion.name); 
     closeSearch();      
   };
 
@@ -222,13 +211,13 @@ function SearchBar({ onSearch, loading }) {
         <View style={[styles.suggestionsContainer, { width: maxWidth }]}>
           {suggestions.map((item, index) => {
             const isLast = index === suggestions.length - 1;
-            const displayName = item.state 
-              ? `${item.name}, ${item.state}, ${item.country}` 
-              : `${item.name}, ${item.country}`;
+            const displayName = item.admin1 
+              ? `${item.name}, ${item.admin1}, ${item.country_code}` 
+              : `${item.name}, ${item.country_code}`;
               
             return (
               <TouchableOpacity
-                key={`${item.lat}-${item.lon}-${index}`}
+                key={`${item.id}-${index}`}
                 style={[styles.suggestionItem, isLast && styles.suggestionItemLast]}
                 onPress={() => handleSuggestionPress(item)}
               >
@@ -242,14 +231,27 @@ function SearchBar({ onSearch, loading }) {
   );
 }
 
+//Wind icon get from assest folder because npm library has not wind icon
+function CustomWindIcon({ size, color }) {
+  return (
+    <Image 
+      source={require('../assets/icons/wind.png')} 
+      style={{ width: size, height: size, tintColor: color }} 
+      resizeMode="contain" 
+    />
+  );
+}
+
 //Bottom navigation bar
-function BottomNavBar({ activeTab, onTabPress, darkMode }) {
+function BottomNavBar({ activeTab, onTabPress }) {
   const tabs = [
     { key: 'weather', label: 'Weather', Icon: CloudIcon },
+    { key: 'hourly', label: 'Hourly', Icon: ClockIcon },
+    { key: 'air', label: 'Air', Icon: CustomWindIcon },
     { key: 'settings', label: 'Settings', Icon: CogIcon },
   ];
   return (
-    <View style={[styles.navBar, !darkMode && styles.navBarLight]}>
+    <View style={styles.navBar}>
       {tabs.map((tab) => {
         const isActive = activeTab === tab.key;
         return (
@@ -259,10 +261,10 @@ function BottomNavBar({ activeTab, onTabPress, darkMode }) {
             onPress={() => onTabPress(tab.key)}
             activeOpacity={0.7}
           >
-            <tab.Icon 
-              size={26} 
-              color={isActive ? '#7C5CBF' : '#aaa'} 
-              strokeWidth={isActive ? 2.5 : 2} 
+            <tab.Icon
+              size={22}
+              color={isActive ? '#A78BFA' : 'rgba(255,255,255,0.58)'}
+              strokeWidth={isActive ? 2.5 : 2}
             />
             <Text style={[styles.navLabel, isActive && styles.navLabelActive, { marginTop: 4 }]}>
               {tab.label}
@@ -276,18 +278,13 @@ function BottomNavBar({ activeTab, onTabPress, darkMode }) {
 
 //7 days
 function ForecastCard({ item, unit, displayTempRound }) {
-  const visual = getWeatherEmoji(item.id, item.icon);
+  const visual = getWeatherEmoji(item.weatherCode, false);
   return (
     <View style={styles.glassCard}>
       <View style={styles.glassCardShimmer} />
       <Text style={styles.forecastDay}>{item.day}</Text>
       
-      {/* Hybrid Render: Icon if Clouds, Emoji otherwise */}
-      {typeof visual === 'string' ? (
-        <Text style={styles.forecastEmoji}>{visual}</Text>
-      ) : (
-        <Image source={visual} style={styles.cloudIconSmall} resizeMode="contain" />
-      )}
+      <Image source={visual} style={styles.cloudIconSmall} resizeMode="contain" />
 
       <Text style={styles.tempHigh}>
         {displayTempRound(item.tempMax)}°<Text style={styles.unitInline}>{unit}</Text>
@@ -298,11 +295,11 @@ function ForecastCard({ item, unit, displayTempRound }) {
 
 //Main
 export default function ForecastScreen({ navigation }) {
-  const { width, height } = useWindowDimensions();
   const [activeTab, setActiveTab] = useState('weather');
   const [current, setCurrent] = useState(null);
   const [forecast, setForecast] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const { unit, displayTemp, displayTempRound, savedCity, updateSavedCity, darkMode, loaded } =
     useAppContext();
@@ -316,12 +313,10 @@ export default function ForecastScreen({ navigation }) {
   const loadWeather = async (city) => {
     setLoading(true);
     try {
-      const [weather, forecastData] = await Promise.all([
-        fetchCurrentWeather(city),
-        fetchForecast(city),
-      ]);
-      setCurrent(weather);
-      setForecast(groupByDay(forecastData.list));
+      const data = await fetchWeatherData(city);
+      setCurrent(data.current);
+      setForecast(data.daily);
+      updateSavedCity(data.current.name);
     } catch (err) {
       Alert.alert('Not Found', `Could not find "${city}". Check the spelling and try again.`);
     } finally {
@@ -330,25 +325,23 @@ export default function ForecastScreen({ navigation }) {
   };
 
   const handleSearch = async (city) => {
-    await updateSavedCity(city);
     loadWeather(city);
   };
 
   const handleTabPress = (key) => {
     setActiveTab(key);
-    if (key === 'settings' && navigation) {
-      navigation.navigate('settings'); 
-    }
+    if (key === 'hourly' && navigation) navigation.navigate('HourlyScreen');
+    if (key === 'air' && navigation) navigation.navigate('AirQualityScreen');
+    if (key === 'settings' && navigation) navigation.navigate('settings'); 
   };
 
-  const visual = current ? getWeatherEmoji(current.weather[0].id, current.weather[0].icon) : null;
-  const sunrise = current ? formatTime(current.sys.sunrise, current.timezone) : null;
-  const windKm = current ? (current.wind.speed * 3.6).toFixed(1) : null;
+  const visual = current ? getWeatherEmoji(current.weatherCode, !current.isDay) : null;
+  const sunriseTime = current ? formatSunrise(current.sunrise) : null;
 
   return (
     <ImageBackground
       source={require('../assets/images/dark_mode.png')}
-      style={[styles.bg, { width, height }]}
+      style={styles.bg}
       resizeMode="cover"
     >
       {!darkMode && <View style={styles.lightOverlay} />}
@@ -376,67 +369,55 @@ export default function ForecastScreen({ navigation }) {
               {/* City Name */}
               <View style={styles.cityRow}>
                 <Text style={styles.cityBold}>{current.name}</Text>
-                <Text style={styles.cityLight}>, {current.sys.country}</Text>
+                <Text style={styles.cityLight}>, {current.country}</Text>
               </View>
 
               {/* main icons*/}
               <View style={styles.iconWrapper}>
-                {typeof visual === 'string' ? (
-                   <Text style={styles.bigIcon}>{visual}</Text>
-                ) : (
-                   <Image source={visual} style={styles.cloudIconBig} resizeMode="contain" />
-                )}
+                <Image source={visual} style={styles.cloudIconBig} resizeMode="contain" />
               </View>
 
               {/* Temperature */}
               <Text style={styles.tempText}>
-                {displayTemp(current.main.temp)}°{unit}
+                {displayTemp(current.temp)}°{unit}
               </Text>
               
-              {/*describe */}
               <Text style={styles.descText}>
-                {(() => {
-                    let desc = current.weather[0].description;
-                    const isNight = current.weather[0].icon.endsWith('n');
-                    
-                    if (current.weather[0].id >= 200 && current.weather[0].id < 300) {
-                        desc = "Stormy Weather";
-                    }
-
-                    desc = desc.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                    
-                    return isNight ? `${desc} at Night` : desc;
-                })()}
+                {current.isDay ? "Clear Skies" : "Clear Night"}
               </Text>
 
-              <View style={styles.statsRow}>
+              <BlurView intensity={30} tint="default" style={styles.statsRow}>
                 <View style={styles.statItem}>
                   <Image 
                     source={require('../assets/icons/wind.png')} 
                     style={{ width: 22, height: 22, tintColor: '#fff' }} 
                     resizeMode="contain" 
                   />
-                  <Text style={styles.statValue}>{windKm} km/h</Text>
+                  <Text style={styles.statValue}>{current.windSpeed} km/h</Text>
                 </View>
+                
                 <View style={styles.statDivider} />
+                
                 <View style={styles.statItem}>
                   <Image 
                     source={require('../assets/icons/drop.png')} 
                     style={{ width: 22, height: 22, tintColor: '#fff' }} 
                     resizeMode="contain" 
                   />
-                  <Text style={styles.statValue}>{current.main.humidity}%</Text>
+                  <Text style={styles.statValue}>{current.humidity}%</Text>
                 </View>
+                
                 <View style={styles.statDivider} />
+                
                 <View style={styles.statItem}>
                   <Image 
                     source={require('../assets/icons/sun.png')} 
                     style={{ width: 22, height: 22, tintColor: '#fff' }} 
                     resizeMode="contain" 
                   />
-                  <Text style={styles.statValue}>{sunrise}</Text>
+                  <Text style={styles.statValue}>{sunriseTime}</Text>
                 </View>
-              </View>
+              </BlurView>
 
               {/*7 days forecast*/}
               <View style={styles.forecastSection}>
@@ -469,7 +450,7 @@ export default function ForecastScreen({ navigation }) {
           )}
         </ScrollView>
 
-        <BottomNavBar activeTab={activeTab} onTabPress={handleTabPress} darkMode={darkMode} />
+        <BottomNavBar activeTab={activeTab} onTabPress={handleTabPress} />
       </SafeAreaView>
     </ImageBackground>
   );
@@ -595,7 +576,7 @@ const styles = StyleSheet.create({
   },
   iconWrapper: { alignItems: 'center', marginVertical: 10 },
   bigIcon: { fontSize: 120, lineHeight: 130 },
-  cloudIconBig: { width: 160, height: 140, marginTop: 7 }, // New style for Clouds
+  cloudIconBig: { width: 160, height: 140, marginTop: 7 }, 
   tempText: {
     color: '#fff',
     fontSize: 72,
@@ -617,13 +598,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     borderRadius: 18,
     paddingVertical: 14,
     paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.15)',
     marginBottom: 24,
+    overflow: 'hidden',
   },
   statItem: {
     flex: 1,
@@ -695,7 +677,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   forecastEmoji: { fontSize: 30 },
-  cloudIconSmall: { width: 35, height: 35, marginVertical: 2 }, // New style for Clouds
+  cloudIconSmall: { width: 35, height: 35, marginVertical: 2 }, 
   tempHigh: {
     color: '#fff',
     fontSize: 16,
@@ -711,26 +693,27 @@ const styles = StyleSheet.create({
   //Navigation bar
   navBar: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    height: 72,
+    backgroundColor: '#262A33',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    height: 78,
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 24,
+    paddingHorizontal: 18,
+    borderTopWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 16,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 20,
   },
-  navBarLight: { backgroundColor: 'rgba(255,255,255,0.92)' },
   navItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
   },
-  navLabel: { fontSize: 12, fontWeight: '500', color: '#aaa' },
-  navLabelActive: { color: '#7C5CBF', fontWeight: '700' },
+  navLabel: { fontSize: 12, fontWeight: '500', color: 'rgba(255,255,255,0.58)' },
+  navLabelActive: { color: '#A78BFA', fontWeight: '700' },
 });
